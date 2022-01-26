@@ -3,7 +3,7 @@
 set -o nounset
 set -o errexit
 
-KEMTLS_FOLDER=kemtls-reproducible
+KEMTLS_FOLDER=kemtls-server-reproducible
 CERT_DIR_LOCAL=${KEMTLS_FOLDER}/certs/
 
 if [ ! -d $KEMTLS_FOLDER ]; then

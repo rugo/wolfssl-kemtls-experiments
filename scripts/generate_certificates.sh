@@ -3,7 +3,7 @@
 set -o nounset
 set -o errexit
 
-KEMTLS_FOLDER=kemtls-reproducible
+KEMTLS_FOLDER=kemtls-server-reproducible
 if [ ! -d $KEMTLS_FOLDER ]; then
     echo "No '$KEMTLS_FOLDER' folder. Are you in the experiments root dir?"
     exit 1
