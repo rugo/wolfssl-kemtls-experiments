@@ -5,7 +5,7 @@ set -o errexit
 
 KEMTLS_FOLDER=kemtls-server-reproducible
 PATCHED_ENCODER=scripts/updates/encoder.py
-MKCERT_PATH=kemtls-reproducible/kemtls-experiment/mk-cert
+MKCERT_PATH=kemtls-server-reproducible/kemtls-experiment/mk-cert
 
 if [ ! -d $KEMTLS_FOLDER ]; then
     echo "No '$KEMTLS_FOLDER' folder. Are you in the experiments root dir?"
