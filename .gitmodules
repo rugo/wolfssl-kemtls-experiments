@@ -1,0 +1,6 @@
+[submodule "kemtls-server-reproducible"]
+	path = kemtls-server-reproducible
+	url = https://git.fslab.de/rgonza2s/kemtls-server-reproducible.git
+[submodule "zephyr-docker"]
+	path = zephyr-docker
+	url = https://github.com/rugo/zephyr-docker.git

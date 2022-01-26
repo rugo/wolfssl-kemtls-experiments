@@ -3,7 +3,7 @@
 set -o nounset
 set -o errexit
 
-ZEPHYR_DIR=zehpyr_docker
+ZEPHYR_DIR=zephyr-docker
 BUILD_SCRIPT=/root/scripts/build.sh
 
 if [ ! -d $ZEPHYR_DIR ]; then
