@@ -9,6 +9,13 @@ SIG_ALGS="falcon512 dilithium2 rainbowIclassic"
 KEM_ALGS="kyber512 ntruhps2048509 lightsaber"
 SERVER_PORT=4443
 
+HOST_IP="192.0.2.1"
+IP_SET=$(ip a|grep ${HOST_IP}|echo $?)
+
+if [ "$IP_SET" -ne "0" ]; then
+    echo "No ethernet interface is set to the IP ${HOST_IP}! Exiting."
+    exit 1
+fi
 
 for CERT_SIG_ALG in $SIG_ALGS; do
     for CERT_KEM_ALG in $KEM_ALGS; do
