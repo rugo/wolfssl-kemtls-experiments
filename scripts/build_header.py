@@ -36,9 +36,12 @@ def bytes_to_hex_bytes(b: bytes):
 
 
 def cert_to_hex_bytes(testcase_fname):
-    with open(testcase_fname, "rb") as f:
-        content = f.read()
-        return len(content), bytes_to_hex_bytes(content)
+    with open(testcase_fname) as f:
+        content = f.readlines()
+        # Remove header and footer line (---- [...] ----)
+        content_stripped = "".join(content[1:-1])
+        content_decoded = base64.b64decode(content_stripped)
+        return len(content_decoded), bytes_to_hex_bytes(content_decoded)
 
 
 def fill_template(template_path, **kwargs):
