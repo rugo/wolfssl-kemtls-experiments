@@ -8,6 +8,7 @@ trap "pkill -f tlsserver" EXIT
 SIG_ALGS="falcon512 dilithium2 rainbowIclassic"
 KEM_ALGS="kyber512 ntruhps2048509 lightsaber"
 SERVER_PORT=4443
+BENCHMARKS_DIR="benchmarks/$(date --iso-8601=seconds)"
 
 HOST_IP="192.0.2.1"
 IP_SET=$(ip a|grep ${HOST_IP}|echo $?)
@@ -16,6 +17,12 @@ if [ "$IP_SET" -ne "0" ]; then
     echo "No ethernet interface is set to the IP ${HOST_IP}! Exiting."
     exit 1
 fi
+
+if [ ! -d $BENCHMARKS_DIR ]; then
+    echo "Benchmark dir '${BENCHMARKS_DIR}' does not exist. Creating it now."
+    mkdir -p $BENCHMARKS_DIR
+fi
+
 
 for CERT_SIG_ALG in $SIG_ALGS; do
     for CERT_KEM_ALG in $KEM_ALGS; do
@@ -47,8 +54,7 @@ for CERT_SIG_ALG in $SIG_ALGS; do
                 echo "  Flashing zephyr to board"
                 scripts/flash_zephyr.sh
                 echo "  Waiting for handshake to finish"
-                # TODO
-                sleep 20
+                ./scripts/recv_benchmarks.py > ${BENCHMARKS_DIR}/${KEX_ALG}_${CERT_SIG_ALG}_${CERT_KEM_ALG}_${i}.txt
                 echo "  Killing server"
                 pkill -f tlsserver
             done
