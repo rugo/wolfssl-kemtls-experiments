@@ -14,4 +14,4 @@ fi
 cd $ZEPHYR_DIR
 
 echo "Starting build."
-docker-compose run builder bash $BUILD_SCRIPT $@
+docker-compose run builder bash -- $BUILD_SCRIPT $@
