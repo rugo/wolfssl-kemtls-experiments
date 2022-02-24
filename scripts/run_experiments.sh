@@ -6,7 +6,7 @@ set -o errexit
 trap "pkill -f tlsserver" EXIT
 
 SIG_ALGS="falcon512 dilithium2 rainbowIclassic"
-KEM_ALGS="kyber512 ntruhps2048509 lightsaber"
+KEM_ALGS="kyber512 lightsaber" # TODO: re-add ntruhps2048509
 SERVER_PORT=4443
 BENCHMARKS_DIR="benchmarks/$(date --iso-8601=seconds)"
 
