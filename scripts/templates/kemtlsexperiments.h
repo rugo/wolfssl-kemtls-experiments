@@ -5,10 +5,6 @@
 #define KEMTLS_CERT_KEM_$cert_kem_alg$
 #define KEMTLS_EPH_KEX_$eph_kex_alg$
 
-const char ca_cert[] = {
-$ca_cert_hex$
-};
-int ca_cert_len = $ca_cert_len$;
 
 #ifdef KEMTLS_EPH_KEX_lightsaber
 #define KEX_GROUP PQ_LIGHTSABER

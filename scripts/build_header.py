@@ -19,12 +19,15 @@ KEX_SCHEMES = [
 
 CERTIFICATE_PATH = "kemtls-server-reproducible/certs"
 TEMPLATE_PATH = "scripts/templates/kemtlsexperiments.h"
+CERT_TEMPLATE_PATH = "scripts/templates/kemtls_ca.h"
 ZEPHYR_PROJ_DIR = "zephyr-docker/zephyr_workspaces/kemtls-experiment/modules/crypto/wolfssl/zephyr"
 TARGET_HEADER_PATH = os.path.join(ZEPHYR_PROJ_DIR, "kemtlsexperiments.h")
+CERT_TARGET_HEADER_PATH = os.path.join(ZEPHYR_PROJ_DIR, "kemtls_ca.h")
 
 PATHS_TO_CHECK = [
     CERTIFICATE_PATH,
     TEMPLATE_PATH,
+    CERT_TEMPLATE_PATH,
     ZEPHYR_PROJ_DIR
 ]
 
@@ -54,6 +57,15 @@ def fill_template(template_path, **kwargs):
     return content
 
 
+def overwrite_header(template_path, header_path, **template_vars):
+    if os.path.isfile(header_path):
+        print(f"Path {header_path} already exists! Will overwrite!")
+
+    content = fill_template(template_path, **template_vars)
+
+    with open(header_path, "w") as f:
+        f.write(content)
+
 def check_path_exists_crash(path):
     if not os.path.exists(path):
         sys.stderr.write(f"Path {path} does not exist!")
@@ -81,18 +93,17 @@ def main():
 
     ca_cert_len, ca_cert_hex = cert_to_hex_bytes(testcase_path)
 
-    if os.path.isfile(TARGET_HEADER_PATH):
-        print(f"Path {TARGET_HEADER_PATH} already exists! Will overwrite!")
-
-    content = fill_template(
-            TEMPLATE_PATH, eph_kex_alg=eph_kex_alg,
+    overwrite_header(
+            TEMPLATE_PATH, TARGET_HEADER_PATH, eph_kex_alg=eph_kex_alg,
             cert_sig_alg=cert_sig_alg, cert_kem_alg=cert_kem_alg,
             ca_cert_len=ca_cert_len, ca_cert_hex=ca_cert_hex
     )
-    # print(content)
 
-    with open(TARGET_HEADER_PATH, "w") as f:
-        f.write(content)
+    overwrite_header(
+            CERT_TEMPLATE_PATH, CERT_TARGET_HEADER_PATH, eph_kex_alg=eph_kex_alg,
+            cert_sig_alg=cert_sig_alg, cert_kem_alg=cert_kem_alg,
+            ca_cert_len=ca_cert_len, ca_cert_hex=ca_cert_hex
+    )
 
 
 if __name__ == '__main__':
