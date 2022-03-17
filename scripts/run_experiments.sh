@@ -54,7 +54,7 @@ for CERT_SIG_ALG in $SIG_ALGS; do
                 echo "  Flashing zephyr to board"
                 scripts/flash_zephyr.sh
                 echo "  Waiting for handshake to finish"
-                ./scripts/recv_benchmarks.py > ${BENCHMARKS_DIR}/${KEX_ALG}_${CERT_SIG_ALG}_${CERT_KEM_ALG}_${i}.txt
+                ./scripts/recv_benchmarks.py | tee ${BENCHMARKS_DIR}/${KEX_ALG}_${CERT_SIG_ALG}_${CERT_KEM_ALG}_${i}.txt
                 echo "  Killing server"
                 pkill -f tlsserver
             done
