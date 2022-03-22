@@ -10,11 +10,29 @@ except ImportError:
 
 BENCHMARK_PREFIX="[benchmark]"
 BENCHMARK_CMD_PREFIX="[benchmark_cmd]"
+BENCHMARK_ERROR_PREFIX="[benchmark_error]"
+
+class EXIT_CODES:
+    SUCCESS = 0
+    ERROR = 1
 
 def handle_command(cmd, cmd_val):
-    if cmd == "FINISH" and cmd_val == "y":
+    finish = None
+    exit_code = None
+    if cmd == "finish_success":
         sys.stderr.write("Received FINISHED command. Exiting.")
-        return True
+        finish = True
+        if cmd_val == "y":
+            exit_code = EXIT_CODES.SUCCESS
+        else:
+            exit_code = EXIT_CODES.ERROR
+    elif cmd == "error":
+        sys.stderr.write(f"Received ERROR message: {cmd_val}!")
+        # So far errors are purely informational
+        finish = False
+    
+    return (finish, exit_code)
+
 
 def _get_kv(line, prefix):
     if line.startswith(prefix):
@@ -30,6 +48,7 @@ def main():
     ser.baudrate = 9600
 
     finished = False
+    exit_code = EXIT_CODES.ERROR
 
     while not finished:
         line = ser.read_until()
@@ -44,11 +63,15 @@ def main():
             print(f"{name},{val}")
         elif line_dec.startswith(BENCHMARK_CMD_PREFIX):
             name, val = _get_kv(line_dec, BENCHMARK_CMD_PREFIX)
-            finished = handle_command(name, val)
+            print(f"CMD_{name},{val}")
+            finished, exit_code = handle_command(name, val)
         else:
             sys.stderr.write("[DEBUG] " + line_dec)
         
     sys.stderr.write("Finished communication.")
+    return exit_code
+
 
 if __name__ == '__main__':
-    main()
+    exit_code = main()
+    sys.exit(exit_code)
