@@ -36,4 +36,4 @@ if len(module_found) != len(MODULE_NAMES):
     sys.exit(1)
 
 for module, size in module_sizes.items():
-    print(f"rom_size_{module}: {size}")
+    print(f"rom_size_{module},{size}")
