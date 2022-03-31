@@ -44,7 +44,10 @@ def _get_kv(line, prefix):
 
 
 def main():
-    ser = serial.Serial("/dev/ttyACM0")
+    try:
+        ser = serial.Serial("/dev/ttyACM0")
+    except Exception:
+        ser = serial.Serial("/dev/ttyACM1")
     ser.baudrate = 9600
 
     finished = False
