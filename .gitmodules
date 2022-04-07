@@ -4,3 +4,6 @@
 [submodule "zephyr-docker"]
 	path = zephyr-docker
 	url = https://github.com/rugo/zephyr-docker.git
+[submodule "OQS/oqs-demos"]
+	path = OQS/oqs-demos
+	url = https://github.com/open-quantum-safe/oqs-demos.git

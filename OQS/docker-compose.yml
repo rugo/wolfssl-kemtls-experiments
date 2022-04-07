@@ -1,0 +1,7 @@
+version: "3.9"
+services:
+  builder:
+    build: oqs-demos/openssl3
+    volumes:
+      - .:/mnt
+      
