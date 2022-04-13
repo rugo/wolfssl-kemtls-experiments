@@ -6,7 +6,7 @@ import sys
 MODULE_NAMES = [
     "wolfssl",
     "PQClean",
-    "PQM4",
+   # "PQM4",
     "ca_cert"
 ]
 
@@ -32,7 +32,7 @@ for line in sys.stdin:
             module_found[module] = True
 
 if len(module_found) != len(MODULE_NAMES):
-    print("Not all module sizes found in output!")
+    print("Not all module sizes found in output!", file=sys.stderr)
     sys.exit(1)
 
 for module, size in module_sizes.items():

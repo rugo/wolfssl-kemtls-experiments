@@ -6,9 +6,10 @@ set -o errexit
 trap "pkill -f tlsserver" EXIT
 
 SIG_ALGS="falcon512 dilithium2 rainbowIclassic"
-KEM_ALGS="kyber512 lightsaber ntruhps2048509" # TODO: re-add 
+KEM_ALGS="kyber512 lightsaber ntruhps2048509"
 SERVER_PORT=4443
 BENCHMARKS_DIR="benchmarks/$(date --iso-8601=seconds)"
+ZEPHYR_WORKSPACE=kemtls-experiment
 
 HOST_IP="192.0.2.1"
 IP_SET=$(ip a|grep ${HOST_IP}|echo $?)
@@ -39,12 +40,13 @@ for CERT_SIG_ALG in $SIG_ALGS; do
                 echo "  Waiting for server to come up"
                 SERVER_UP="n"
                 for j in {1..10}; do
-                    NC_RET=$(nc localhost $SERVER_PORT|echo "$?")
+                    NC_RET=$(lsof -i4 -iTCP:${SERVER_PORT}|echo "$?")
                     if [ "$NC_RET" -eq "0" ]; then
                         SERVER_UP="y"
                         break;
                     fi
                     echo "  Server didn't come up yet."
+                    sleep 2
                 done
 
                 if [ "$SERVER_UP" == "n" ]; then
@@ -59,7 +61,7 @@ for CERT_SIG_ALG in $SIG_ALGS; do
                 # and doesnt change for different keys.
                 if [ $i -eq 1 ]; then
                     echo "  Running ROM analysis"
-                    scripts/rom_report_wolfssl.sh|scripts/filter_rom_report.py > ${BENCHMARK_PATH}
+                    scripts/rom_report_wolfssl.sh $ZEPHYR_WORKSPACE|scripts/filter_rom_report.py > ${BENCHMARK_PATH}
                 fi
                 echo "  Flashing zephyr to board"
                 scripts/flash_zephyr.sh
