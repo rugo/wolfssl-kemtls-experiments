@@ -6,7 +6,7 @@ import sys
 MODULE_NAMES = [
     "wolfssl",
     "PQClean",
-   # "PQM4",
+    "PQM4",
     "ca_cert"
 ]
 
@@ -31,9 +31,10 @@ for line in sys.stdin:
             module_sizes[module] = val
             module_found[module] = True
 
-if len(module_found) != len(MODULE_NAMES):
-    print("Not all module sizes found in output!", file=sys.stderr)
-    sys.exit(1)
+for module in MODULE_NAMES:
+    if module not in module_found:
+        print(f"Not all module sizes found in output! Missing: {module}!", file=sys.stderr)
+        sys.exit(1)
 
 for module, size in module_sizes.items():
     print(f"rom_size_{module},{size}")
