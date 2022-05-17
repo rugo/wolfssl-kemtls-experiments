@@ -73,18 +73,19 @@ def check_path_exists_crash(path):
 
 
 def main():
-    if len(sys.argv) < 3:
-        sys.stderr.write(f"Not enough arguments submitted. Do a: {sys.argv[0]} EPH_KEX_ALG CERT_SIG_ALG TESTCASE_NUMBER")
+    if len(sys.argv) < 4:
+        sys.stderr.write(f"Not enough arguments submitted. Do a: {sys.argv[0]} EPH_KEX_ALG ROOT_SIG_ALG LEAF_SIG_ALG TESTCASE_NUMBER")
         sys.exit(1)
 
     for path in PATHS_TO_CHECK:
         check_path_exists_crash(path)
 
     eph_kex_alg = sys.argv[1]
-    cert_sig_alg = sys.argv[2]
-    testcase_num = int(sys.argv[3])
+    cert_root_sig_alg = sys.argv[2]
+    cert_leaf_sig_alg = sys.argv[3]
+    testcase_num = int(sys.argv[4])
 
-    testcase_path = os.path.join(CERTIFICATE_PATH, f"{cert_sig_alg}_{testcase_num:04d}_ca.crt")
+    testcase_path = os.path.join(CERTIFICATE_PATH, f"{cert_root_sig_alg}_{cert_leaf_sig_alg}_{testcase_num:04d}_ca.crt")
 
     print("Using", testcase_path)
 
@@ -94,7 +95,7 @@ def main():
 
     overwrite_header(
             TEMPLATE_PATH, TARGET_HEADER_PATH,
-            eph_kex_alg=eph_kex_alg, cert_sig_alg=cert_sig_alg
+            eph_kex_alg=eph_kex_alg, cert_root_sig_alg=cert_root_sig_alg, cert_leaf_sig_alg=cert_leaf_sig_alg
     )
 
     overwrite_header(

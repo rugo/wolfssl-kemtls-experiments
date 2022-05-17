@@ -6,7 +6,7 @@ set -o errexit
 trap "pkill -f pqtls_server" EXIT
 
 SIG_ALGS="dilithium2 falcon512"
-KEM_ALGS="kyber512 lightsaber ntruhps2048509 "
+KEM_ALGS="kyber512 lightsaber ntruhps2048509"
 SERVER_PORT=4443
 BENCHMARKS_DIR="benchmarks/pqtls/$(date --iso-8601=seconds)"
 ZEPHYR_WORKSPACE=pqtls-experiment
@@ -28,23 +28,24 @@ fi
 
 
 
-for CERT_SIG_ALG in $SIG_ALGS; do
+for ROOT_SIG_ALG in $SIG_ALGS; do
+  for LEAF_SIG_ALG in $SIG_ALGS; do
     for KEX_ALG in $KEM_ALGS; do
-        echo "Conducting experiments for CERT=[${CERT_SIG_ALG}], KEX=${KEX_ALG}."
+        echo "Conducting experiments for CERT=[${ROOT_SIG_ALG},${LEAF_SIG_ALG}], KEX=${KEX_ALG}."
         for i in {1..2}; do
-            BENCHMARK_PATH=${BENCHMARKS_DIR}/${CERT_SIG_ALG}_${KEX_ALG}_${i}.txt
+            BENCHMARK_PATH=${BENCHMARKS_DIR}/${ROOT_SIG_ALG}_${LEAF_SIG_ALG}_${KEX_ALG}_${i}.txt
             echo " Starting round ${i}..."
             echo "  Patching headers of zephyr/wolfssl"
-            scripts/pqtls/build_header.py $KEX_ALG $CERT_SIG_ALG $i
+            scripts/pqtls/build_header.py $KEX_ALG $ROOT_SIG_ALG $LEAF_SIG_ALG $i
 
             if [ $i -eq 1 ]; then
-                echo "  Building server for algorithm combination  CERT=[${CERT_SIG_ALG}], KEX=${KEX_ALG}."
-                 scripts/pqtls/build_server.sh $CERT_SIG_ALG $KEX_ALG $i
+                echo "  Building server for algorithm combination  CERT=[${ROOT_SIG_ALG},${LEAF_SIG_ALG}], KEX=${KEX_ALG}."
+                 scripts/pqtls/build_server.sh $ROOT_SIG_ALG ${LEAF_SIG_ALG} $KEX_ALG $i
             fi
 
             echo "  Launching server"
-            scripts/pqtls/launch_server.sh $CERT_SIG_ALG $KEX_ALG $i > /dev/null 2>&1 &
-            
+            scripts/pqtls/launch_server.sh $ROOT_SIG_ALG ${LEAF_SIG_ALG} $KEX_ALG $i > /dev/null 2>&1 &
+
             echo "  Waiting for server to come up"
             SERVER_UP="n"
             for j in {1..10}; do
@@ -76,4 +77,5 @@ for CERT_SIG_ALG in $SIG_ALGS; do
             pkill -f pqtls_server
         done
     done
+  done
 done

@@ -5,7 +5,7 @@ import sys
 
 MODULE_NAMES = [
     "wolfssl",
-    "PQClean",
+    # "PQClean",
     "PQM4",
     "ca_cert"
 ]

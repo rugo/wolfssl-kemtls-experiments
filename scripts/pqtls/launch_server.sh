@@ -11,17 +11,18 @@ if [ ! -d $CERT_DIR_LOCAL ]; then
     exit 1
 fi
 
-if [ $# -lt 3 ] ; then
-    echo "SIGN_ALGORITHM, KEM_ALGORITHM or testcase number not set. Call: $0 SIGN_ALGO KEM_ALGO TESTCASE_NUM"
-    echo "Example: $0 falcon512 lightsaber 1"
+if [ $# -lt 4 ] ; then
+    echo "ROOT_SIGN_ALGORITHM, LEAF_SIGN_ALGORITHM, KEM_ALGORITHM or testcase number not set. Call: $0 SIGN_ALGO LEAF_SIG_ALG KEM_ALGO TESTCASE_NUM"
+    echo "Example: $0 dilithium2 falcon512 lightsaber 1"
     exit 1
 fi
 
-SIGN_ALGORITHM=$1
-KEM_ALGORITHM=$2
-TESTCASE_NUM=$(printf "%04d" $3)
+ROOT_SIGN_ALGORITHM=$1
+LEAF_SIGN_ALGORITHM=$2
+KEM_ALGORITHM=$3
+TESTCASE_NUM=$(printf "%04d" $4)
 
-TESTCASE_PATH=${SIGN_ALGORITHM}_${TESTCASE_NUM}
+TESTCASE_PATH=${ROOT_SIGN_ALGORITHM}_${LEAF_SIGN_ALGORITHM}_${TESTCASE_NUM}
 TESTCASE_LOCAL_PATH=${CERT_DIR_ABSOLUTE}/${TESTCASE_PATH}
 TESTCASE_CERT=${TESTCASE_LOCAL_PATH}.crt
 TESTCASE_KEY=${TESTCASE_LOCAL_PATH}.key
