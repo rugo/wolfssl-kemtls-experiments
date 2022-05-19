@@ -224,30 +224,40 @@ def build_average(benchmarks):
     return averaged_benchmarks
 
 
-def round_bignum(num):
+def round_bignum(num, latex=False):
     if num < 1:
-        return round(num * 100, 1), "%"
+        return round(num * 100, 1), "%" if not latex else "\\%"
 
     if num > 10**6:
-        return round(num / 10**6, 2), "*10^6"
+        return round(num / 10**6, 1), "*10^6" if not latex else "$\\cdot 10^6$"
     if num > 10**3:
-        return round(num / 10**3, 2), "*10^3"
+        return round(num / 10**3, 1), "*10^3" if not latex else "$\\cdot 10^3$"
     return num, ""
 
-def build_table(averaged_bench, desired_benchmarks, round_res=True):
-    des_b = desired_benchmarks
-    field_names = ["Algorithm Comb."] + des_b
+def build_table(averaged_bench, desired_benchmarks, round_res=True, latex=False):
+    if desired_benchmarks:
+        des_b = desired_benchmarks
+    else:
+        des_b = list(list(averaged_bench.values())[0].keys())
+    field_names = ["KEX", "Root", "Leaf"] + des_b
 
     rows = []
 
-    for comb in averaged_bench:
-        row = [comb]
+    combinations = sorted(averaged_bench.keys())
+
+    for comb in combinations:
+        row = comb.split("_")
         for bname in des_b:
-            if round_res:
-                num, unit = round_bignum(averaged_bench[comb][bname])
-                val = f"{num} {unit}"
-            else:
-                val = averaged_bench[comb][bname]
+            try:
+                avg_val = averaged_bench[comb][bname]
+                if round_res:
+                    num, unit = round_bignum(avg_val, latex)
+                    val = f"{num}{unit}"
+                else:
+                    val = avg_val
+            except KeyError:
+                val = ""
+
             row.append(val)
         rows.append(row)
 
@@ -260,7 +270,10 @@ def print_table(field_names, rows, csv=False, format="pretty"):
             fields = []
             for f in row:
                 if isinstance(f, float):
-                    fields.append(str(int(f)))
+                    if f > 1:
+                        fields.append(str(int(f)))
+                    else:
+                        fields.append(str(f))
                 else:
                     fields.append(f)
             table.append(",".join(fields))
@@ -275,7 +288,8 @@ def calc_additional_columns(benchmarks, pqtls):
 
     for alg_comb, bench in benchmarks.items():
         # Size of wolfssl without PQM4
-        bench["rom_size_wolfssl_wo_pqm4"] = bench["rom_size_wolfssl"] - bench["rom_size_PQM4"] - bench["rom_size_ca_cert"]
+        # Set fixed value for now, as they only differ by very little, but are still confusing when looking at the percentages (e.g certificate percent)
+        bench["rom_size_wolfssl_wo_pqm4"] = 111216. # bench["rom_size_wolfssl"] - bench["rom_size_PQM4"] - bench["rom_size_ca_cert"]
         # wolfssl size, also with asm routines
         bench["rom_size_wolfssl_complete"] = bench["rom_size_wolfssl_wo_pqm4"] + bench["rom_size_PQM4_calculated"]
         # Percent Size of PQM4 in Wolfssl 
@@ -310,25 +324,29 @@ def main():
     csv = "--csv" in sys.argv
     paper_tables = "--paper" in sys.argv
     latex = "--latex" in sys.argv
+    all = "--all" in sys.argv
     benchmarks = get_benchmarks(sys.argv[1], pqtls)
 
     avg = build_average(benchmarks)
     calc_additional_columns(avg, pqtls)
 
-    format = "latex" if latex else "pretty"
+    format = "latex_raw" if latex else "pretty"
 
     if not paper_tables:
         # Dont round for csv output
-        des_bench = PQTLS_DESIRED_BENCHMARKS if pqtls else DESIRED_BENCHMARKS
+        if all:
+            des_bench = None
+        else:
+            des_bench = PQTLS_DESIRED_BENCHMARKS if pqtls else DESIRED_BENCHMARKS
         round_res = not csv
         field_names, rows = build_table(avg, des_bench, round_res)
         print_table(field_names, rows, csv, format)
     else:
         round_res = True
-        field_names, rows = build_table(avg, PQTLS_PAPER_TABLE1, round_res)
+        field_names, rows = build_table(avg, PQTLS_PAPER_TABLE1, round_res, latex)
         print_table(field_names, rows, csv, format)
 
-        field_names, rows = build_table(avg, PQTLS_PAPER_TABLE2, round_res)
+        field_names, rows = build_table(avg, PQTLS_PAPER_TABLE2, round_res, latex)
         print_table(field_names, rows, csv, format)
     
 
