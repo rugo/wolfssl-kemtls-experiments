@@ -67,7 +67,8 @@ PQTLS_PAPER_TABLE1 = [
     "rom_size_PQM4_calculated",
     "pqm4_code_percent",
     "rom_size_ca_cert",
-    "certificate_percent"
+    "certificate_percent",
+    "wolfssl_max_mem_usage"
 ]
 
 PQTLS_PAPER_TABLE2 = [
@@ -176,6 +177,21 @@ def get_benchmarks(path, pqtls=False):
             if cert_root_alg == "rainbowIclassic" or cert_leaf_alg == "rainbowIclassic":
                 benchmarks_collected[f"{kex_alg}_{cert_root_alg}_{cert_leaf_alg}"]["peak_mem"].append(RAINBOW_PK_SIZE)
         else:
+            stack_usage_0 = STACK_BENCHMARKS[cert_sig_alg]["verify_hash_stack"]
+            stack_usage_kex = max(
+                STACK_BENCHMARKS[kex_alg]["wc_pq_make_keypair_stack"],
+                STACK_BENCHMARKS[kex_alg]["wc_pq_kem_dec_stack"],
+                STACK_BENCHMARKS[kex_alg]["wc_pq_kem_enc_stack"]
+            )
+            stack_usage_cert_kem = max(
+                STACK_BENCHMARKS[cert_kem_alg]["wc_pq_make_keypair_stack"],
+                STACK_BENCHMARKS[cert_kem_alg]["wc_pq_kem_dec_stack"],
+                STACK_BENCHMARKS[cert_kem_alg]["wc_pq_kem_enc_stack"]
+            )
+            benchmarks_collected[f"{kex_alg}_{cert_sig_alg}_{cert_kem_alg}"]["wc_pq_verify_hash_stack"].append(stack_usage_0)
+            benchmarks_collected[f"{kex_alg}_{cert_sig_alg}_{cert_kem_alg}"]["wc_pq_kem_stack"].append(stack_usage_cert_kem)
+            benchmarks_collected[f"{kex_alg}_{cert_sig_alg}_{cert_kem_alg}"]["kex_stack"].append(stack_usage_kex)
+
             if cert_sig_alg == "rainbowIclassic":
                 benchmarks_collected[f"{kex_alg}_{cert_sig_alg}_{cert_kem_alg}"]["peak_mem"].append(RAINBOW_PK_SIZE)
 
@@ -268,15 +284,20 @@ def calc_additional_columns(benchmarks, pqtls):
         bench["certificate_percent"] = bench["rom_size_ca_cert"] / bench["rom_size_wolfssl_complete"]
         bench["bytes_traffic"] = bench["bytes_send"] + bench["bytes_received"]
 
+        
+
         for name in ["1mbit_13msdelay", "1mbit_60msdelay", "46kbit_1500msdelay",]:
             bname = "handshake_cycles_spend_in_pqm4" + "_" + name
             source_bname = "cycles_connect_" + name
             if not pqtls:
+                bench["wolfssl_max_mem_usage"] = bench["peak_mem"] + max(bench["wc_pq_verify_hash_stack"], bench["kex_stack"], bench["wc_pq_kem_stack"])
                 # Percent of how many percent of cycles are spend within PQM4
-                print(alg_comb)
-                bench[bname] = bench["cycles_wc_pq_make_keypair"] + bench["cycles_wc_pq_kem_dec"] + bench["cycles_wc_pq_verify_hash"] + bench["cycles_wc_pq_kem_encapsulate"] / bench[source_bname] 
+                bench[bname] = (bench["cycles_wc_pq_make_keypair"] + bench["cycles_wc_pq_kem_dec"] + bench["cycles_wc_pq_verify_hash"] + bench["cycles_wc_pq_kem_encapsulate"]) / bench[source_bname] 
             else:
-                bench[bname] = bench["cycles_wc_pq_make_keypair"] + bench["cycles_wc_pq_kem_dec"] + bench["cycles_wc_pq_verify_hash_0"] + bench["cycles_wc_pq_verify_hash_1"] / bench[source_bname]
+                bench["wolfssl_max_mem_usage"] = bench["peak_mem"] + max(bench["wc_pq_verify_hash_0_stack"], bench["wc_pq_verify_hash_1_stack"], bench["kex_stack"])
+                
+                bench[bname] = (bench["cycles_wc_pq_make_keypair"] + bench["cycles_wc_pq_kem_dec"] + bench["cycles_wc_pq_verify_hash_0"] + bench["cycles_wc_pq_verify_hash_1"]) / bench[source_bname]
+
 
 
 def main():
@@ -288,24 +309,27 @@ def main():
     pqtls = "--pqtls" in sys.argv
     csv = "--csv" in sys.argv
     paper_tables = "--paper" in sys.argv
+    latex = "--latex" in sys.argv
     benchmarks = get_benchmarks(sys.argv[1], pqtls)
 
     avg = build_average(benchmarks)
     calc_additional_columns(avg, pqtls)
+
+    format = "latex" if latex else "pretty"
 
     if not paper_tables:
         # Dont round for csv output
         des_bench = PQTLS_DESIRED_BENCHMARKS if pqtls else DESIRED_BENCHMARKS
         round_res = not csv
         field_names, rows = build_table(avg, des_bench, round_res)
-        print_table(field_names, rows, csv)
+        print_table(field_names, rows, csv, format)
     else:
         round_res = True
         field_names, rows = build_table(avg, PQTLS_PAPER_TABLE1, round_res)
-        print_table(field_names, rows, csv)
+        print_table(field_names, rows, csv, format)
 
         field_names, rows = build_table(avg, PQTLS_PAPER_TABLE2, round_res)
-        print_table(field_names, rows, csv)
+        print_table(field_names, rows, csv, format)
     
 
 
