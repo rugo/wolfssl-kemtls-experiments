@@ -292,13 +292,14 @@ def calc_additional_columns(benchmarks, pqtls):
         bench["rom_size_wolfssl_wo_pqm4"] = 111216. # bench["rom_size_wolfssl"] - bench["rom_size_PQM4"] - bench["rom_size_ca_cert"]
         # wolfssl size, also with asm routines
         bench["rom_size_wolfssl_complete"] = bench["rom_size_wolfssl_wo_pqm4"] + bench["rom_size_PQM4_calculated"]
-        # Percent Size of PQM4 in Wolfssl 
-        bench["pqm4_code_percent"] = bench["rom_size_PQM4_calculated"] / bench["rom_size_wolfssl_complete"]
-        # Percent Size of Cert in Wolfssl 
+        # Percent Size of PQM4 in Wolfssl
+        bench["pqm4_code_wo_cert"] = bench["rom_size_PQM4_calculated"] - bench["rom_size_ca_cert"]
+        bench["pqm4_code_percent"] = bench["pqm4_code_wo_cert"] / bench["rom_size_wolfssl_complete"]
+        # Percent Size of Cert in Wolfssl
         bench["certificate_percent"] = bench["rom_size_ca_cert"] / bench["rom_size_wolfssl_complete"]
         bench["bytes_traffic"] = bench["bytes_send"] + bench["bytes_received"]
 
-        
+
 
         for name in ["1mbit_13msdelay", "1mbit_60msdelay", "46kbit_1500msdelay",]:
             bname = "handshake_cycles_spend_in_pqm4" + "_" + name
@@ -306,10 +307,10 @@ def calc_additional_columns(benchmarks, pqtls):
             if not pqtls:
                 bench["wolfssl_max_mem_usage"] = bench["peak_mem"] + max(bench["wc_pq_verify_hash_stack"], bench["kex_stack"], bench["wc_pq_kem_stack"])
                 # Percent of how many percent of cycles are spend within PQM4
-                bench[bname] = (bench["cycles_wc_pq_make_keypair"] + bench["cycles_wc_pq_kem_dec"] + bench["cycles_wc_pq_verify_hash"] + bench["cycles_wc_pq_kem_encapsulate"]) / bench[source_bname] 
+                bench[bname] = (bench["cycles_wc_pq_make_keypair"] + bench["cycles_wc_pq_kem_dec"] + bench["cycles_wc_pq_verify_hash"] + bench["cycles_wc_pq_kem_encapsulate"]) / bench[source_bname]
             else:
                 bench["wolfssl_max_mem_usage"] = bench["peak_mem"] + max(bench["wc_pq_verify_hash_0_stack"], bench["wc_pq_verify_hash_1_stack"], bench["kex_stack"])
-                
+
                 bench[bname] = (bench["cycles_wc_pq_make_keypair"] + bench["cycles_wc_pq_kem_dec"] + bench["cycles_wc_pq_verify_hash_0"] + bench["cycles_wc_pq_verify_hash_1"]) / bench[source_bname]
 
 
@@ -348,7 +349,7 @@ def main():
 
         field_names, rows = build_table(avg, PQTLS_PAPER_TABLE2, round_res, latex)
         print_table(field_names, rows, csv, format)
-    
+
 
 
 
