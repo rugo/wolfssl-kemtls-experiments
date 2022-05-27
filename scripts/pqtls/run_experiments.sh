@@ -11,13 +11,13 @@ SERVER_PORT=4443
 ZEPHYR_WORKSPACE=pqtls-experiment
 ZEPHYR_ELF_PATH=zephyr-docker/zephyr_workspaces/${ZEPHYR_WORKSPACE}/build/zephyr/zephyr.elf
 
-if [ "$#" -gt 0 ]; then
-    DIR_NAME=$1
-else
-    DIR_NAME=$(date --iso-8601=seconds)
-fi
+IFACE_NAME=enp0s20f0u1
 
-BENCHMARKS_DIR="benchmarks/pqtls/${DIR_NAME}"
+TC_PARAMS=("dev ${IFACE_NAME} root netem delay 13ms rate 1mbit" "dev ${IFACE_NAME} root netem delay 60ms rate 1mbit" "dev ${IFACE_NAME} root netem delay 1500ms rate 46kbit")
+TC_PARAMS_NAMES=("1mbit_13msdelay" "1mbit_60msdelay" "46kbit_1500msdelay")
+
+
+BENCHMARKS_DIR="benchmarks/pqtls/"
 
 HOST_IP="192.0.2.1"
 IP_SET=$(ip a|grep ${HOST_IP}|echo $?)
@@ -29,46 +29,29 @@ fi
 
 python -c "import serial" > /dev/null 2>&1 || (echo "pyserial not installed" && exit 1)
 
-if [ ! -d $BENCHMARKS_DIR ]; then
-    echo "Benchmark dir '${BENCHMARKS_DIR}' does not exist. Creating it now."
-    mkdir -p $BENCHMARKS_DIR
-fi
-
+for TC_NUM in $(seq 0 2); do
+    BENCHMARK_SUBDIR=${BENCHMARKS_DIR}/${TC_PARAMS_NAMES[$TC_NUM]}
+    if [ ! -d $BENCHMARK_SUBDIR ]; then
+        echo "Benchmark dir '${BENCHMARK_SUBDIR}' does not exist. Creating it now."
+        mkdir -p $BENCHMARK_SUBDIR
+    else
+        echo "Benchmark dir '${BENCHMARK_SUBDIR}' exists. Please clear first."
+        # exit 1
+    fi
+done
 
 
 for ROOT_SIG_ALG in $SIG_ALGS; do
   for LEAF_SIG_ALG in $SIG_ALGS; do
     for KEX_ALG in $KEM_ALGS; do
-        echo "Conducting experiments for CERT=[${ROOT_SIG_ALG},${LEAF_SIG_ALG}], KEX=${KEX_ALG}."
-        for i in {1..2}; do
-            BENCHMARK_PATH=${BENCHMARKS_DIR}/${ROOT_SIG_ALG}_${LEAF_SIG_ALG}_${KEX_ALG}_${i}.txt
-            echo " Starting round ${i}..."
+        echo "Conducting experiments for CERT=[${ROOT_SIG_ALG},${LEAF_SIG_ALG}], KEX=${KEX_ALG}."|tee -a progress.log
+        for i in {20..30}; do
+            echo "At iteration ${i}"|tee -a progress.log
+            BENCHMARK_PATH=${BENCHMARKS_DIR}/${TC_PARAMS_NAMES[0]}/${ROOT_SIG_ALG}_${LEAF_SIG_ALG}_${KEX_ALG}_${i}.txt
+
             echo "  Patching headers of zephyr/wolfssl"
             scripts/pqtls/build_header.py $KEX_ALG $ROOT_SIG_ALG $LEAF_SIG_ALG $i
 
-            if [ $i -eq 1 ]; then
-                echo "  Building server for algorithm combination  CERT=[${ROOT_SIG_ALG},${LEAF_SIG_ALG}], KEX=${KEX_ALG}."
-                 scripts/pqtls/build_server.sh $ROOT_SIG_ALG ${LEAF_SIG_ALG} $KEX_ALG $i
-            fi
-
-            echo "  Launching server"
-            scripts/pqtls/launch_server.sh $ROOT_SIG_ALG ${LEAF_SIG_ALG} $KEX_ALG $i > /dev/null 2>&1 &
-
-            echo "  Waiting for server to come up"
-            SERVER_UP="n"
-            for j in {1..10}; do
-                NC_RET=$(lsof -i4 -iTCP:${SERVER_PORT}|echo "$?")
-                if [ "$NC_RET" -eq "0" ]; then
-                    SERVER_UP="y"
-                    break;
-                fi
-                echo "  Server didn't come up yet."
-            done
-
-            if [ "$SERVER_UP" == "n" ]; then
-                echo "  Server didn't start. Exiting."
-                exit 1
-            fi
             echo "  Building zephyr/wolfssl"
             scripts/pqtls/build_wolfssl.sh
             # run ROM analysis only on first build, because its slow
@@ -82,10 +65,45 @@ for ROOT_SIG_ALG in $SIG_ALGS; do
             fi
             echo "  Flashing zephyr to board"
             scripts/pqtls/flash_zephyr.sh
-            echo "  Waiting for handshake to finish"
-            ./scripts/recv_benchmarks.py >> ${BENCHMARK_PATH}
-            echo "  Killing server"
-            pkill -f pqtls_server
+
+            if [ $i -eq 1 ]; then
+                echo "  Building server for algorithm combination  CERT=[${ROOT_SIG_ALG},${LEAF_SIG_ALG}], KEX=${KEX_ALG}."
+                 scripts/pqtls/build_server.sh $ROOT_SIG_ALG ${LEAF_SIG_ALG} $KEX_ALG $i
+            fi
+
+            for TC_NUM in $(seq 0 2); do
+                    BENCHMARK_PATH=${BENCHMARKS_DIR}/${TC_PARAMS_NAMES[$TC_NUM]}/${ROOT_SIG_ALG}_${LEAF_SIG_ALG}_${KEX_ALG}_${i}.txt
+                    echo " Resetting qdisc"
+                    sudo tc qdisc del dev enp0s20f0u1 root||true
+                    echo " Adding network parameters: $(echo ${TC_PARAMS[$TC_NUM]})"|tee -a progress.log
+                    sudo tc qdisc add $(echo ${TC_PARAMS[$TC_NUM]})
+                    echo " Starting round ${i} with ${TC_PARAMS_NAMES[$TC_NUM]}..."
+                    echo "  Launching server"
+                    scripts/pqtls/launch_server.sh $ROOT_SIG_ALG ${LEAF_SIG_ALG} $KEX_ALG $i > /tmp/pqtls_server.log 2>&1 &
+
+                    echo "  Waiting for server to come up"
+                    SERVER_UP="n"
+                    for j in {1..10}; do
+                        NC_RET=$(lsof -i4 -iTCP:${SERVER_PORT}|echo "$?")
+                        if [ "$NC_RET" -eq "0" ]; then
+                            SERVER_UP="y"
+                            break;
+                        fi
+                        echo "  Server didn't come up yet."
+                    done
+
+                    if [ "$SERVER_UP" == "n" ]; then
+                        echo "  Server didn't start. Exiting."
+                        exit 1
+                    fi
+
+                    echo "  Server Up. Reseting Board."
+                    ./scripts/restart_device.sh
+                    echo "  Waiting for handshake to finish"
+                    ./scripts/recv_benchmarks.py >> ${BENCHMARK_PATH}
+                    echo "  Killing server"
+                    pkill -f pqtls_server
+            done
         done
     done
   done

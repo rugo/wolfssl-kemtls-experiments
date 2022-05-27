@@ -11,12 +11,12 @@ SERVER_PORT=4443
 ZEPHYR_WORKSPACE=kemtls-experiment
 ZEPHYR_ELF_PATH=zephyr-docker/zephyr_workspaces/${ZEPHYR_WORKSPACE}/build/zephyr/zephyr.elf
 
-if [ "$#" -gt 0 ]; then
-    DIR_NAME=$1
-else
-    DIR_NAME=$(date --iso-8601=seconds)
-fi
-BENCHMARKS_DIR="benchmarks/kemtls/${DIR_NAME}"
+IFACE_NAME=enp0s20f0u1
+
+TC_PARAMS=("dev ${IFACE_NAME} root netem delay 13ms rate 1mbit" "dev ${IFACE_NAME} root netem delay 60ms rate 1mbit" "dev ${IFACE_NAME} root netem delay 1500ms rate 46kbit")
+TC_PARAMS_NAMES=("1mbit_13msdelay" "1mbit_60msdelay" "46kbit_1500msdelay")
+
+BENCHMARKS_DIR="benchmarks/kemtls/"
 
 HOST_IP="192.0.2.1"
 IP_SET=$(ip a|grep ${HOST_IP}|echo $?)
@@ -28,38 +28,27 @@ fi
 
 python -c "import serial" > /dev/null 2>&1 || (echo "pyserial not installed" && exit 1)
 
-if [ ! -d $BENCHMARKS_DIR ]; then
-    echo "Benchmark dir '${BENCHMARKS_DIR}' does not exist. Creating it now."
-    mkdir -p $BENCHMARKS_DIR
-fi
 
+for TC_NUM in $(seq 0 2); do
+    BENCHMARK_SUBDIR=${BENCHMARKS_DIR}/${TC_PARAMS_NAMES[$TC_NUM]}
+    if [ ! -d $BENCHMARK_SUBDIR ]; then
+        echo "Benchmark dir '${BENCHMARK_SUBDIR}' does not exist. Creating it now."
+        mkdir -p $BENCHMARK_SUBDIR
+    else
+        echo "Benchmark dir '${BENCHMARK_SUBDIR}' exists. Please clear first."
+        # exit 1
+    fi
+done
 
 
 for CERT_SIG_ALG in $SIG_ALGS; do
     for CERT_KEM_ALG in $KEM_ALGS; do
         for KEX_ALG in $KEM_ALGS; do
-            echo "Conducting experiments for CERT=[${CERT_SIG_ALG},${CERT_KEM_ALG}], KEX=${KEX_ALG}."
-            for i in {1..2}; do
-                BENCHMARK_PATH=${BENCHMARKS_DIR}/${KEX_ALG}_${CERT_SIG_ALG}_${CERT_KEM_ALG}_${i}.txt
-                echo " Starting round ${i}..."
-                echo "  Launching server"
-                scripts/launch_server.sh ${CERT_SIG_ALG} ${CERT_KEM_ALG} $i > /dev/null 2>&1 &
-                echo "  Waiting for server to come up"
-                SERVER_UP="n"
-                for j in {1..10}; do
-                    NC_RET=$(lsof -i4 -iTCP:${SERVER_PORT}|echo "$?")
-                    if [ "$NC_RET" -eq "0" ]; then
-                        SERVER_UP="y"
-                        break;
-                    fi
-                    echo "  Server didn't come up yet."
-                    sleep 2
-                done
+            echo "Conducting experiments for CERT=[${CERT_SIG_ALG},${CERT_KEM_ALG}], KEX=${KEX_ALG}."|tee -a progress.log
+            for i in {20..30}; do
+                echo "At iteration ${i}"|tee -a progess.log
+                BENCHMARK_PATH=${BENCHMARKS_DIR}/${TC_PARAMS_NAMES[0]}/${KEX_ALG}_${CERT_SIG_ALG}_${CERT_KEM_ALG}_${i}.txt
 
-                if [ "$SERVER_UP" == "n" ]; then
-                    echo "  Server didn't start. Exiting."
-                    exit 1
-                fi
                 echo "  Preparing build of zephyr/wolfssl"
                 scripts/build_header.py $KEX_ALG $CERT_SIG_ALG $CERT_KEM_ALG $i
                 echo "  Building zephyr/wolfssl"
@@ -75,10 +64,40 @@ for CERT_SIG_ALG in $SIG_ALGS; do
                 fi
                 echo "  Flashing zephyr to board"
                 scripts/flash_zephyr.sh
-                echo "  Waiting for handshake to finish"
-                ./scripts/recv_benchmarks.py >> ${BENCHMARK_PATH}
-                echo "  Killing server"
-                pkill -f tlsserver
+
+                for TC_NUM in $(seq 0 2); do
+                    BENCHMARK_PATH=${BENCHMARKS_DIR}/${TC_PARAMS_NAMES[$TC_NUM]}/${KEX_ALG}_${CERT_SIG_ALG}_${CERT_KEM_ALG}_${i}.txt
+                    echo " Resetting qdisc"
+                    sudo tc qdisc del dev enp0s20f0u1 root||true
+                    echo " Adding network parameters: $(echo ${TC_PARAMS[$TC_NUM]})"|tee -a progress.log
+                    sudo tc qdisc add $(echo ${TC_PARAMS[$TC_NUM]})
+                    echo " Starting round ${i} with ${TC_PARAMS_NAMES[$TC_NUM]}..."
+                    echo "  Launching server"
+                    scripts/launch_server.sh ${CERT_SIG_ALG} ${CERT_KEM_ALG} $i > /dev/null 2>&1 &
+                    echo "  Waiting for server to come up"
+                    SERVER_UP="n"
+                    for j in {1..10}; do
+                        NC_RET=$(lsof -i4 -iTCP:${SERVER_PORT}|echo "$?")
+                        if [ "$NC_RET" -eq "0" ]; then
+                            SERVER_UP="y"
+                            break;
+                        fi
+                        echo "  Server didn't come up yet."
+                        sleep 2
+                    done
+
+                    if [ "$SERVER_UP" == "n" ]; then
+                        echo "  Server didn't start. Exiting."
+                        exit 1
+                    fi
+
+                    echo "  Server Up. Reseting Board."
+                    ./scripts/restart_device.sh
+                    echo "  Waiting for handshake to finish"
+                    ./scripts/recv_benchmarks.py >> ${BENCHMARK_PATH}
+                    echo "  Killing server"
+                    pkill -f tlsserver
+                done
             done
         done
     done
