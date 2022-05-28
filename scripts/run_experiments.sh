@@ -45,9 +45,14 @@ for CERT_SIG_ALG in $SIG_ALGS; do
     for CERT_KEM_ALG in $KEM_ALGS; do
         for KEX_ALG in $KEM_ALGS; do
             echo "Conducting experiments for CERT=[${CERT_SIG_ALG},${CERT_KEM_ALG}], KEX=${KEX_ALG}."|tee -a progress.log
-            for i in {20..30}; do
+            for i in {1..1000}; do
                 echo "At iteration ${i}"|tee -a progess.log
                 BENCHMARK_PATH=${BENCHMARKS_DIR}/${TC_PARAMS_NAMES[0]}/${KEX_ALG}_${CERT_SIG_ALG}_${CERT_KEM_ALG}_${i}.txt
+
+                if [ -e $BENCHMARK_PATH ]; then
+                 echo $BENCHMARK_PATH already exists. Skipping.
+                 continue
+                fi
 
                 echo "  Preparing build of zephyr/wolfssl"
                 scripts/build_header.py $KEX_ALG $CERT_SIG_ALG $CERT_KEM_ALG $i
@@ -93,6 +98,7 @@ for CERT_SIG_ALG in $SIG_ALGS; do
 
                     echo "  Server Up. Reseting Board."
                     ./scripts/restart_device.sh
+
                     echo "  Waiting for handshake to finish"
                     ./scripts/recv_benchmarks.py >> ${BENCHMARK_PATH}
                     echo "  Killing server"

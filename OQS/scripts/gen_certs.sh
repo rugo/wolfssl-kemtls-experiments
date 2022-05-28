@@ -14,7 +14,7 @@ fi
 
 for ROOT_SIG_ALG in $SIG_ALGS; do
     for LEAF_SIG_ALG in $SIG_ALGS; do
-        for i in $(seq 1 2); do
+        for i in $(seq 1 1000); do
             NUM=$(printf "%04d" $i)
             echo "Doing ${ROOT_SIG_ALG}x${LEAF_SIG_ALG} number ${NUM} now."
             BASENAME=${TARGET_DIR}/${ROOT_SIG_ALG}_${LEAF_SIG_ALG}_${NUM}

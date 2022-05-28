@@ -45,9 +45,13 @@ for ROOT_SIG_ALG in $SIG_ALGS; do
   for LEAF_SIG_ALG in $SIG_ALGS; do
     for KEX_ALG in $KEM_ALGS; do
         echo "Conducting experiments for CERT=[${ROOT_SIG_ALG},${LEAF_SIG_ALG}], KEX=${KEX_ALG}."|tee -a progress.log
-        for i in {20..30}; do
+        for i in {1..1000}; do
             echo "At iteration ${i}"|tee -a progress.log
             BENCHMARK_PATH=${BENCHMARKS_DIR}/${TC_PARAMS_NAMES[0]}/${ROOT_SIG_ALG}_${LEAF_SIG_ALG}_${KEX_ALG}_${i}.txt
+            if [ -e $BENCHMARK_PATH ]; then
+                echo $BENCHMARK_PATH already exists. Skipping.
+                continue
+            fi
 
             echo "  Patching headers of zephyr/wolfssl"
             scripts/pqtls/build_header.py $KEX_ALG $ROOT_SIG_ALG $LEAF_SIG_ALG $i
@@ -66,10 +70,8 @@ for ROOT_SIG_ALG in $SIG_ALGS; do
             echo "  Flashing zephyr to board"
             scripts/pqtls/flash_zephyr.sh
 
-            if [ $i -eq 1 ]; then
-                echo "  Building server for algorithm combination  CERT=[${ROOT_SIG_ALG},${LEAF_SIG_ALG}], KEX=${KEX_ALG}."
-                 scripts/pqtls/build_server.sh $ROOT_SIG_ALG ${LEAF_SIG_ALG} $KEX_ALG $i
-            fi
+            echo "  Building server for algorithm combination  CERT=[${ROOT_SIG_ALG},${LEAF_SIG_ALG}], KEX=${KEX_ALG}."
+            scripts/pqtls/build_server.sh $ROOT_SIG_ALG ${LEAF_SIG_ALG} $KEX_ALG $i
 
             for TC_NUM in $(seq 0 2); do
                     BENCHMARK_PATH=${BENCHMARKS_DIR}/${TC_PARAMS_NAMES[$TC_NUM]}/${ROOT_SIG_ALG}_${LEAF_SIG_ALG}_${KEX_ALG}_${i}.txt
