@@ -1,6 +1,6 @@
 # KEMTLS and PQTLS in WolfSSL Experiments Code
 This is the code accompanying the paper `KEMTLS vs. PQTLS: Performance on Embedded Systems`.
-The experiments where conducted to be fully reproducible.
+The experiments where designed to be fully reproducible.
 
 This repository glues together all the pieces needed to run the code.
 For this purpose it makes heavy use of submodules.
@@ -31,8 +31,9 @@ Other components of the project, that are only indirectly included are:
 Our experiments where conducted on a [STK3701a Giant Gecko Board](https://www.silabs.com/development-tools/mcu/32-bit/efm32gg11-starter-kit).
 This board needs to be connected to a host computer running the benchmarks/experiments.
 The board needs to be connected via Ethernet (for networking) and via its JLink USB connector (for flashing and resetting).
+Everything else, like the embedded tool chain should be included in the Docker container.
 
-[!Setup](aux/setup.png)
+![Setup](aux/setup.png)
 
 ### Required Software
 The software setup was tested on Arch Linux.
