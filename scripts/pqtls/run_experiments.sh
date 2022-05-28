@@ -12,6 +12,7 @@ ZEPHYR_WORKSPACE=pqtls-experiment
 ZEPHYR_ELF_PATH=zephyr-docker/zephyr_workspaces/${ZEPHYR_WORKSPACE}/build/zephyr/zephyr.elf
 
 IFACE_NAME=enp0s20f0u1
+NUM_ITERS=1000
 
 TC_PARAMS=("dev ${IFACE_NAME} root netem delay 13ms rate 1mbit" "dev ${IFACE_NAME} root netem delay 60ms rate 1mbit" "dev ${IFACE_NAME} root netem delay 1500ms rate 46kbit")
 TC_PARAMS_NAMES=("1mbit_13msdelay" "1mbit_60msdelay" "46kbit_1500msdelay")
@@ -45,7 +46,7 @@ for ROOT_SIG_ALG in $SIG_ALGS; do
   for LEAF_SIG_ALG in $SIG_ALGS; do
     for KEX_ALG in $KEM_ALGS; do
         echo "Conducting experiments for CERT=[${ROOT_SIG_ALG},${LEAF_SIG_ALG}], KEX=${KEX_ALG}."|tee -a progress.log
-        for i in {1..1000}; do
+        for i in {1..${NUM_ITERS}}; do
             echo "At iteration ${i}"|tee -a progress.log
             BENCHMARK_PATH=${BENCHMARKS_DIR}/${TC_PARAMS_NAMES[0]}/${ROOT_SIG_ALG}_${LEAF_SIG_ALG}_${KEX_ALG}_${i}.txt
             if [ -e $BENCHMARK_PATH ]; then

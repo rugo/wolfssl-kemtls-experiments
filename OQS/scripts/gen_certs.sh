@@ -7,6 +7,7 @@ SIG_ALGS="falcon512 dilithium2 rainbowIclassic"
 TARGET_DIR="/mnt/certs"
 SSL_DIR=/opt/oqssa
 SSL_BIN=${SSL_DIR}/bin/openssl
+NUM_CERTS=1000
 
 if [ ! -d  $TARGET_DIR ]; then
     mkdir -p $TARGET_DIR
@@ -14,7 +15,7 @@ fi
 
 for ROOT_SIG_ALG in $SIG_ALGS; do
     for LEAF_SIG_ALG in $SIG_ALGS; do
-        for i in $(seq 1 1000); do
+        for i in $(seq 1 $NUM_CERTS); do
             NUM=$(printf "%04d" $i)
             echo "Doing ${ROOT_SIG_ALG}x${LEAF_SIG_ALG} number ${NUM} now."
             BASENAME=${TARGET_DIR}/${ROOT_SIG_ALG}_${LEAF_SIG_ALG}_${NUM}
