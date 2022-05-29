@@ -19,5 +19,7 @@ fi
 cd $OQS_FOLDER
 echo "Running certificate builder in Docker."
 docker-compose run builder sh /mnt/scripts/gen_certs.sh
+cd ..
+
 echo "Fixing Permissions"
-sudo chmod a+r ${OQS_FOLDER}/certs/*
+sudo chmod a+r $CERT_FOLDER/*

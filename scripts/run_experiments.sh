@@ -50,8 +50,9 @@ echo "Changeing permissions on relevante files."
 sudo chmod a+w ${WORKSPACE_PATH}/modules/crypto/wolfssl/zephyr/kemtlsexperiments.h
 sudo chmod a+w ${WORKSPACE_PATH}/modules/crypto/wolfssl/zephyr/kemtls_ca.h
 
-cmp scripts/templates/efm32gg11b820f2048gl192.dtsi ${WORKSPACE_PATH}/zephyr/dts/arm/silabs/efm32gg11b820f2048gl192.dtsi
-if [ "$?" -ne "0" ]; then 
+RES=0
+cmp scripts/templates/efm32gg11b820f2048gl192.dtsi ${WORKSPACE_PATH}/zephyr/dts/arm/silabs/efm32gg11b820f2048gl192.dtsi||RES=$(echo $?)
+if [ "$RES" -ne "0" ]; then 
     echo "Patching dts file so west knows GG11 has 512KB RAM"
     sudo cp scripts/templates/efm32gg11b820f2048gl192.dtsi ${WORKSPACE_PATH}/zephyr/dts/arm/silabs/efm32gg11b820f2048gl192.dtsi
 fi
