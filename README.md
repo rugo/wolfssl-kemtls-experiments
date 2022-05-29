@@ -7,7 +7,7 @@ For this purpose it makes heavy use of submodules.
 To clone it you therefore have to use `--recurse-submodules`:
 
 ```bash
-git clone --recurse-submodules $URL
+git clone --recurse-submodules https://github.com/rugo/wolfssl-kemtls-experiments
 ```
 
 ## Components
