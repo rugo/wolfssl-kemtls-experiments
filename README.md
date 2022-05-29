@@ -40,9 +40,11 @@ The software setup was tested on Arch Linux.
 The scripts make heavy use of Docker and docker-compose to achieve reproducible builds.
 To flash the binaries onto the board, the `Jlink` tools are required.
 Specifically, the `JLinkExe` binary has to be in the PATH.
+For the PQTLS benchmarks, also the `cmake` and an up-to-date `gcc` have to be available.
 
 ### Running the Experiments
 To run the experiments, the ethernet adapter connected to the giant gecko needs to be set to the static IP address `192.0.2.1`.
+Then, the `IFACE_NAME` variable in the `run_experiments.sh` (see blow) scripts have to be set to the network interface connected to the giant gecko (e.g. `IFACE_NAME=eth0`).
 
 Four main scripts are needed to run the experiment:
 

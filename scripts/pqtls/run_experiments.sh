@@ -12,7 +12,7 @@ ZEPHYR_WORKSPACE=pqtls-experiment
 WORKSPACE_PATH=zephyr-docker/zephyr_workspaces/${ZEPHYR_WORKSPACE}
 ZEPHYR_ELF_PATH=${WORKSPACE_PATH}/build/zephyr/zephyr.elf
 
-IFACE_NAME=enp0s20f0u1
+IFACE_NAME=enp0s25
 NUM_ITERS=1000
 
 TC_PARAMS=("dev ${IFACE_NAME} root netem delay 13ms rate 1mbit" "dev ${IFACE_NAME} root netem delay 60ms rate 1mbit" "dev ${IFACE_NAME} root netem delay 1500ms rate 46kbit")
@@ -45,8 +45,13 @@ done
 echo "Initializing wets project."
 scripts/pqtls/build_wolfssl.sh --init
 echo "Fixing Permissions"
-sudo chmod a+w ${WORKSPACE_PATH}/modules/crypto/wolfssl/wolfssl/pqtls_experiment.h
-sudo chmod a+w ${WORKSPACE_PATH}/modules/crypto/wolfssl/zephyr/pqtls_ca.h
+sudo chown -R $(whoami): ${WORKSPACE_PATH}/modules/crypto/wolfssl/
+
+cmp scripts/templates/efm32gg11b820f2048gl192.dtsi ${WORKSPACE_PATH}/zephyr/dts/arm/silabs/efm32gg11b820f2048gl192.dtsi
+if [ "$?" -ne "0" ]; then
+    echo "Patching dts file so west knows GG11 has 512KB RAM"
+    sudo cp scripts/templates/efm32gg11b820f2048gl192.dtsi ${WORKSPACE_PATH}/zephyr/dts/arm/silabs/efm32gg11b820f2048gl192.dtsi
+fi
 
 for ROOT_SIG_ALG in $SIG_ALGS; do
   for LEAF_SIG_ALG in $SIG_ALGS; do
@@ -83,7 +88,7 @@ for ROOT_SIG_ALG in $SIG_ALGS; do
             for TC_NUM in $(seq 0 2); do
                     BENCHMARK_PATH=${BENCHMARKS_DIR}/${TC_PARAMS_NAMES[$TC_NUM]}/${ROOT_SIG_ALG}_${LEAF_SIG_ALG}_${KEX_ALG}_${i}.txt
                     echo " Resetting qdisc"
-                    sudo tc qdisc del dev enp0s20f0u1 root||true
+                    sudo tc qdisc del dev $IFACE_NAME root||true
                     echo " Adding network parameters: $(echo ${TC_PARAMS[$TC_NUM]})"|tee -a progress.log
                     sudo tc qdisc add $(echo ${TC_PARAMS[$TC_NUM]})
                     echo " Starting round ${i} with ${TC_PARAMS_NAMES[$TC_NUM]}..."
