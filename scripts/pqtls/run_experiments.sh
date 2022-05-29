@@ -48,7 +48,7 @@ for ROOT_SIG_ALG in $SIG_ALGS; do
   for LEAF_SIG_ALG in $SIG_ALGS; do
     for KEX_ALG in $KEM_ALGS; do
         echo "Conducting experiments for CERT=[${ROOT_SIG_ALG},${LEAF_SIG_ALG}], KEX=${KEX_ALG}."|tee -a progress.log
-        for i in {1..${NUM_ITERS}}; do
+	for i in $(seq 1 ${NUM_ITERS}); do
             echo "At iteration ${i}"|tee -a progress.log
             BENCHMARK_PATH=${BENCHMARKS_DIR}/${TC_PARAMS_NAMES[0]}/${ROOT_SIG_ALG}_${LEAF_SIG_ALG}_${KEX_ALG}_${i}.txt
             if [ -e $BENCHMARK_PATH ]; then
