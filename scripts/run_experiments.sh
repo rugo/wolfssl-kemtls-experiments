@@ -49,7 +49,7 @@ for CERT_SIG_ALG in $SIG_ALGS; do
     for CERT_KEM_ALG in $KEM_ALGS; do
         for KEX_ALG in $KEM_ALGS; do
             echo "Conducting experiments for CERT=[${CERT_SIG_ALG},${CERT_KEM_ALG}], KEX=${KEX_ALG}."|tee -a progress.log
-            for i in {1..${NUM_ITERS}}; do
+	    for i in $(seq 1 ${NUM_ITERS}); do
                 echo "At iteration ${i}"|tee -a progess.log
                 BENCHMARK_PATH=${BENCHMARKS_DIR}/${TC_PARAMS_NAMES[0]}/${KEX_ALG}_${CERT_SIG_ALG}_${CERT_KEM_ALG}_${i}.txt
 
