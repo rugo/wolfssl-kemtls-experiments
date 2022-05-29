@@ -41,6 +41,8 @@ for TC_NUM in $(seq 0 2); do
     fi
 done
 
+echo "Initializing wets project."
+scripts/pqtls/build_wolfssl.sh --init
 
 for ROOT_SIG_ALG in $SIG_ALGS; do
   for LEAF_SIG_ALG in $SIG_ALGS; do

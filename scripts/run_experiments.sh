@@ -42,6 +42,9 @@ for TC_NUM in $(seq 0 2); do
 done
 
 
+echo "Initializing wolfssl project"
+scripts/build_wolfssl.sh --init
+
 for CERT_SIG_ALG in $SIG_ALGS; do
     for CERT_KEM_ALG in $KEM_ALGS; do
         for KEX_ALG in $KEM_ALGS; do
