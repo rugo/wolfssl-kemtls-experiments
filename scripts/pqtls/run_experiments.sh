@@ -9,7 +9,8 @@ SIG_ALGS="dilithium2 falcon512"
 KEM_ALGS="kyber512 lightsaber ntruhps2048509"
 SERVER_PORT=4443
 ZEPHYR_WORKSPACE=pqtls-experiment
-ZEPHYR_ELF_PATH=zephyr-docker/zephyr_workspaces/${ZEPHYR_WORKSPACE}/build/zephyr/zephyr.elf
+WORKSPACE_PATH=zephyr-docker/zephyr_workspaces/${ZEPHYR_WORKSPACE}
+ZEPHYR_ELF_PATH=${WORKSPACE_PATH}/build/zephyr/zephyr.elf
 
 IFACE_NAME=enp0s20f0u1
 NUM_ITERS=1000
@@ -43,6 +44,9 @@ done
 
 echo "Initializing wets project."
 scripts/pqtls/build_wolfssl.sh --init
+echo "Fixing Permissions"
+sudo chmod a+w ${WORKSPACE_PATH}/modules/crypto/wolfssl/wolfssl/pqtls_experiment.h
+sudo chmod a+w ${WORKSPACE_PATH}/modules/crypto/wolfssl/zephyr/pqtls_ca.h
 
 for ROOT_SIG_ALG in $SIG_ALGS; do
   for LEAF_SIG_ALG in $SIG_ALGS; do

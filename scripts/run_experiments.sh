@@ -9,7 +9,8 @@ SIG_ALGS="falcon512 dilithium2 rainbowIclassic"
 KEM_ALGS="kyber512 lightsaber ntruhps2048509"
 SERVER_PORT=4443
 ZEPHYR_WORKSPACE=kemtls-experiment
-ZEPHYR_ELF_PATH=zephyr-docker/zephyr_workspaces/${ZEPHYR_WORKSPACE}/build/zephyr/zephyr.elf
+WORKSPACE_PATH=zephyr-docker/zephyr_workspaces/${ZEPHYR_WORKSPACE}
+ZEPHYR_ELF_PATH=${WORKSPACE_PATH}/build/zephyr/zephyr.elf
 
 IFACE_NAME=enp0s20f0u1
 NUM_ITERS=1000
@@ -44,6 +45,9 @@ done
 
 echo "Initializing wolfssl project"
 scripts/build_wolfssl.sh --init
+echo "Changeing permissions on relevante files."
+sudo chmod a+w ${WORKSPACE_PATH}/modules/crypto/wolfssl/zephyr/kemtlsexperiments.h
+sudo chmod a+w ${WORKSPACE_PATH}/modules/crypto/wolfssl/zephyr/kemtls_ca.h
 
 for CERT_SIG_ALG in $SIG_ALGS; do
     for CERT_KEM_ALG in $KEM_ALGS; do
